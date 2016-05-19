@@ -92,15 +92,19 @@ class TFIDF(KeywordExtractor):
             words = self.tokenizer.cut(sentence)
         freq = {}
         for w in words:
+            print w
             if allowPOS:
                 if w.flag not in allowPOS:
+                    print w.flag, "not in ", allowPOS
                     continue
                 elif not withFlag:
                     w = w.word
             wc = w.word if allowPOS and withFlag else w
+            print wc
             if len(wc.strip()) < 2 or wc.lower() in self.stop_words:
                 continue
             freq[w] = freq.get(w, 0.0) + 1.0
+        print freq
         total = sum(freq.values())
         for k in freq:
             kw = k.word if allowPOS and withFlag else k
