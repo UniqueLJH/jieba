@@ -40,7 +40,7 @@ re_eng = re.compile('[a-zA-Z0-9]', re.U)
 
 # \u4E00-\u9FD5a-zA-Z0-9+#&\._ : All non-space characters. Will be handled with re_han
 # \r\n|\s : whitespace characters. Will not be handled.
-re_han_default = re.compile("([\u4E00-\u9FD5a-zA-Z0-9+#&\.\-_]+)", re.U)
+re_han_default = re.compile("([\u4E00-\u9FD5a-zA-Z0-9+#&\._\-]+)", re.U)
 re_skip_default = re.compile("(\r\n|\s)", re.U)
 re_han_cut_all = re.compile("([\u4E00-\u9FD5]+)", re.U)
 re_skip_cut_all = re.compile("[^a-zA-Z0-9+#\n]", re.U)
@@ -63,6 +63,31 @@ class Tokenizer(object):
         self.initialized = False
         self.tmp_dir = None
         self.cache_file = None
+        self.load_userdict("/usr/local/lib/python2.7/dist-packages/jieba/dict")
+        self.load_synonyms = "/usr/local/lib/python2.7/dist-packages/jieba/synonyms.txt"
+        self.skill_dict = {}
+        self.synonyms = {}
+        # utf-8
+        with open("/usr/local/lib/python2.7/dist-packages/jieba/dict", "rb") as f:
+            while True:
+                line = f.readline()
+                try:
+                    line = line.decode("utf-8")
+                except:
+                    print line, type(line)
+                if len(line) < 3:
+                    break
+                skill, _ = line.strip().split(" ")
+                self.skill_dict[skill] = 1
+        with open(self.load_synonyms, "rb") as f:
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                master, tag = line.strip().split("<---")
+                master = master.decode("utf-8")
+                tag = tag.decode("utf-8")
+                self.synonyms[tag] = master
 
     def __repr__(self):
         return '<Tokenizer dictionary=%r>' % self.dictionary
@@ -311,6 +336,30 @@ class Tokenizer(object):
                     else:
                         yield x
 
+    def get_skill(self, sentence):
+        if not sentence:
+            return {}
+        seg_list = list(self.cut(sentence.lower()))
+        #print seg_list
+        s_dict = {}
+        for i in seg_list:
+            if i in self.synonyms:
+                i = self.synonyms[i]
+            if isinstance(i, unicode):
+                if i in self.skill_dict:
+                    if i in s_dict:
+                        s_dict[i] += 1
+                    else:
+                        s_dict[i] = 1
+            if isinstance(i , str):
+                if i in self.skill_dict:
+                    if i in s_dict:
+                        s_dict[i] += 1
+                    else:
+                        s_dict[i] = 1
+        return s_dict
+        
+
     def cut_for_search(self, sentence, HMM=True):
         """
         Finer segmentation for search engines.
@@ -400,7 +449,7 @@ class Tokenizer(object):
         """
         self.check_initialized()
         word = strdecode(word)
-        freq = int(freq) if freq is not None else self.suggest_freq(word, False)
+        freq = int(freq) if freq else self.suggest_freq(word, False)
         self.FREQ[word] = freq
         self.total += freq
         if tag:
@@ -499,6 +548,7 @@ get_FREQ = lambda k, d=None: dt.FREQ.get(k, d)
 add_word = dt.add_word
 calc = dt.calc
 cut = dt.cut
+get_skill = dt.get_skill
 lcut = dt.lcut
 cut_for_search = dt.cut_for_search
 lcut_for_search = dt.lcut_for_search
