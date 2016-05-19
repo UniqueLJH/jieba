@@ -63,12 +63,11 @@ class Tokenizer(object):
         self.initialized = False
         self.tmp_dir = None
         self.cache_file = None
-        self.load_userdict("/usr/local/lib/python2.7/dist-packages/jieba/dict")
-        self.load_synonyms = "/usr/local/lib/python2.7/dist-packages/jieba/synonyms.txt"
+        self.load_synonyms = get_module_res("synonyms.txt")
         self.skill_dict = {}
         self.synonyms = {}
         # utf-8
-        with open("/usr/local/lib/python2.7/dist-packages/jieba/dict", "rb") as f:
+        with get_module_res("skill.txt") as f:
             while True:
                 line = f.readline()
                 try:
@@ -79,7 +78,7 @@ class Tokenizer(object):
                     break
                 skill, _ = line.strip().split(" ")
                 self.skill_dict[skill] = 1
-        with open(self.load_synonyms, "rb") as f:
+        with self.load_synonyms as f:
             while True:
                 line = f.readline()
                 if not line:
